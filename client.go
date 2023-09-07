@@ -9,6 +9,7 @@ import (
 	otgrpc "github.com/opentracing-contrib/go-grpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 /*
@@ -60,7 +61,7 @@ func NewClient(ctx context.Context, grpcAddress string, timeoutSecond int, opt .
 	options := make([]grpc.DialOption, 0)
 	options = append(options, opt...)
 	options = append(options,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(
 			otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer()),
 		),
@@ -74,6 +75,6 @@ func NewClient(ctx context.Context, grpcAddress string, timeoutSecond int, opt .
 		return ctx, nil, nil, fmt.Errorf("fail to connect on service with address %s", grpcAddress)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(g.timeout*int(time.Second)))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecond*int(time.Second)))
 	return ctx, cancel, conn, nil
 }
