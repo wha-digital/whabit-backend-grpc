@@ -10,7 +10,7 @@ import (
 	"runtime/debug"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	middlewareRecovery "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,8 +18,13 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func grpcCaptureRecover(serviceName string, sentryDSN string) recovery.RecoveryHandlerFunc {
+func grpcCaptureRecover(serviceName string, sentryDSN string) middlewareRecovery.RecoveryHandlerFunc {
 	return func(p any) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(r)
+			}
+		}()
 		if sentryDSN != "" {
 			event := &sentry.Event{
 				Level:       sentry.LevelError,
@@ -57,6 +62,12 @@ func grpcCaptureRecover(serviceName string, sentryDSN string) recovery.RecoveryH
 
 func UnaryServerGrpcCaptureException(serviceName string, sentryDSN string) func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(r)
+			}
+		}()
+
 		resp, err = handler(ctx, req)
 		status, statusOK := status.FromError(err)
 		if statusOK && status != nil {

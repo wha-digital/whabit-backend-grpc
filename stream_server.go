@@ -13,6 +13,12 @@ import (
 
 func StreamServerGrpcCaptureException(serviceName string, sentryDSN string) func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(r)
+			}
+		}()
+
 		err := handler(srv, stream)
 		status, statusOK := status.FromError(err)
 		if statusOK && status != nil {
